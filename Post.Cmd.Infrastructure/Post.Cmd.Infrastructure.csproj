@@ -3,7 +3,6 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,7 +13,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CQRS.Core\CQRS.Core.csproj" />
-    <ProjectReference Include="..\Post.Cmd.Doamin\Post.Cmd.Common.csproj" />
   </ItemGroup>
 
 </Project>

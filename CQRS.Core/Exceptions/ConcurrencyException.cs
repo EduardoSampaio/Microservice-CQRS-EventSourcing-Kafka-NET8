@@ -1,8 +1,7 @@
-﻿namespace CQRS.Core.Exceptions;
-public class ConcurrencyException: Exception
+namespace CQRS.Core.Exceptions
 {
-    public ConcurrencyException()
+    public class ConcurrencyException : Exception
     {
-        
+
     }
 }

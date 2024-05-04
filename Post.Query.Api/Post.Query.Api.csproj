@@ -14,10 +14,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Post.Query.Infrastructure\Post.Query.Infrastructure.csproj" />
   </ItemGroup>
 

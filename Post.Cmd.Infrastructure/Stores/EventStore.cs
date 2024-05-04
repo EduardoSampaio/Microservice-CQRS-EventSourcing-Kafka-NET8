@@ -1,57 +1,72 @@
-﻿using CQRS.Core.Domain;
+using CQRS.Core.Domain;
 using CQRS.Core.Events;
 using CQRS.Core.Exceptions;
 using CQRS.Core.Infrastructure;
 using CQRS.Core.Producers;
 using Post.Cmd.Domain.Aggregates;
-using System;
 
-namespace Post.Cmd.Infrastructure.Stores;
-public class EventStore(IEventStoreRepository eventStoreRepository, IEventProducer eventProducer) : IEventStore
+namespace Post.Cmd.Infrastructure.Stores
 {
-    private readonly IEventStoreRepository _eventStoreRepository = eventStoreRepository;
-    private readonly IEventProducer _eventProducer = eventProducer;
-
-    public async Task<List<BaseEvent>> GetEventsAsync(Guid aggregateId)
+    public class EventStore : IEventStore
     {
-        var eventStream = await _eventStoreRepository.FindByAggregateId(aggregateId);
-        if (eventStream == null || !eventStream.Any())
-        {
-            throw new AggregateNotFoundException("Incorrect post Id provided!");
-        }
-        return eventStream.OrderBy(x => x.Version).Select(x => x.EventData).ToList();
-    }
+        private readonly IEventStoreRepository _eventStoreRepository;
+        private readonly IEventProducer _eventProducer;
 
-    public async Task SaveEventsAsync(Guid aggregateId, IEnumerable<BaseEvent> events, int expectedVersion)
-    {
-        var eventStream = await _eventStoreRepository.FindByAggregateId(aggregateId);
-
-        if(expectedVersion != -1 && eventStream.ToList()[^1].Version != expectedVersion)
+        public EventStore(IEventStoreRepository eventStoreRepository, IEventProducer eventProducer)
         {
-            throw new ConcurrencyException();
+            _eventStoreRepository = eventStoreRepository;
+            _eventProducer = eventProducer;
         }
 
-        var version = expectedVersion;
-
-        foreach (var @event in events)
+        public async Task<List<Guid>> GetAggregateIdsAsync()
         {
-            version++;
-            @event.Version = version;
-            var eventType = @event.GetType().Name;
-            var eventModel = new EventModel
+            var eventStream = await _eventStoreRepository.FindAllAsync();
+
+            if (eventStream == null || !eventStream.Any())
+                throw new ArgumentNullException(nameof(eventStream), "Could not retrieve event stream from the event store!");
+
+            return eventStream.Select(x => x.AggregateIdentifier).Distinct().ToList();
+        }
+
+        public async Task<List<BaseEvent>> GetEventsAsync(Guid aggregateId)
+        {
+            var eventStream = await _eventStoreRepository.FindByAggregateId(aggregateId);
+
+            if (eventStream == null || !eventStream.Any())
+                throw new AggregateNotFoundException("Incorrect post ID provided!");
+
+            return eventStream.OrderBy(x => x.Version).Select(x => x.EventData).ToList();
+        }
+
+        public async Task SaveEventsAsync(Guid aggregateId, IEnumerable<BaseEvent> events, int expectedVersion)
+        {
+            var eventStream = await _eventStoreRepository.FindByAggregateId(aggregateId);
+
+            if (expectedVersion != -1 && eventStream[^1].Version != expectedVersion)
+                throw new ConcurrencyException();
+
+            var version = expectedVersion;
+
+            foreach (var @event in events)
             {
-                TimeStamp = DateTime.Now,
-                AggregateIdentifier = aggregateId,
-                AggregateType = nameof(PostAggregate),
-                Version = version,
-                EventType = eventType,
-                EventData = @event
-            };
+                version++;
+                @event.Version = version;
+                var eventType = @event.GetType().Name;
+                var eventModel = new EventModel
+                {
+                    TimeStamp = DateTime.Now,
+                    AggregateIdentifier = aggregateId,
+                    AggregateType = nameof(PostAggregate),
+                    Version = version,
+                    EventType = eventType,
+                    EventData = @event
+                };
 
-            await _eventStoreRepository.SaveAsync(eventModel);
+                await _eventStoreRepository.SaveAsync(eventModel);
 
-            var topic = Environment.GetEnvironmentVariable("KAFKA_TOPIC");
-            await _eventProducer.ProduceAsync(topic, @event);
+                var topic = Environment.GetEnvironmentVariable("KAFKA_TOPIC");
+                await _eventProducer.ProduceAsync(topic, @event);
+            }
         }
     }
 }

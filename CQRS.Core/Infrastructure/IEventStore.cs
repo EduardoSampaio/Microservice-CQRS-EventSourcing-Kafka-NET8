@@ -1,8 +1,11 @@
-﻿using CQRS.Core.Events;
+using CQRS.Core.Events;
 
-namespace CQRS.Core.Infrastructure;
-public interface IEventStore
+namespace CQRS.Core.Infrastructure
 {
-    Task SaveEventsAsync(Guid aggregateId, IEnumerable<BaseEvent> events, int expectedVersion);
-    Task<List<BaseEvent>> GetEventsAsync(Guid aggregateId);
+    public interface IEventStore
+    {
+        Task SaveEventsAsync(Guid aggregateId, IEnumerable<BaseEvent> events, int expectedVersion);
+        Task<List<BaseEvent>> GetEventsAsync(Guid aggregateId);
+        Task<List<Guid>> GetAggregateIdsAsync();
+    }
 }

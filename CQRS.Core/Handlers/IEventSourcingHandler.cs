@@ -1,8 +1,11 @@
-﻿using CQRS.Core.Domain;
+using CQRS.Core.Domain;
 
-namespace CQRS.Core.Handlers;
-public interface IEventSourcingHandler<T>
+namespace CQRS.Core.Handlers
 {
-    Task SaveAsync(AggregateRoot aggregate);
-    Task<T> GetByIdAsync(Guid aggregateId);
+    public interface IEventSourcingHandler<T>
+    {
+        Task SaveAsync(AggregateRoot aggregate);
+        Task<T> GetByIdAsync(Guid aggregateId);
+        Task RepublishEventsAsync();
+    }
 }

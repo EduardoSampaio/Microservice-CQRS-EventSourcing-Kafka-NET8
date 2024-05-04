@@ -1,13 +1,15 @@
-﻿using CQRS.Core.Messages;
+using CQRS.Core.Messages;
 
-namespace CQRS.Core.Events;
-public abstract class BaseEvent: Message
+namespace CQRS.Core.Events
 {
-    protected BaseEvent(string type)
+    public abstract class BaseEvent : Message
     {
-        this.Type = type;
-    }
+        protected BaseEvent(string type)
+        {
+            Type = type;
+        }
 
-    public int Version { get; set; }
-    public string Type { get; set; } = string.Empty;
+        public string Type { get; set; }
+        public int Version { get; set; }
+    }
 }

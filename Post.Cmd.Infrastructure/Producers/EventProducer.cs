@@ -1,33 +1,39 @@
-﻿using Confluent.Kafka;
+using System.Text.Json;
+using Confluent.Kafka;
 using CQRS.Core.Events;
 using CQRS.Core.Producers;
 using Microsoft.Extensions.Options;
-using System.Text.Json;
 
-namespace Post.Cmd.Infrastructure.Producers;
-public class EventProducer(IOptions<ProducerConfig> config) : IEventProducer
+namespace Post.Cmd.Infrastructure.Producers
 {
-    private readonly ProducerConfig _config = config.Value;
-
-    public async Task ProduceAsync<T>(string topic, T @event) where T : BaseEvent
+    public class EventProducer : IEventProducer
     {
-        using var producer = new ProducerBuilder<string, string>(_config)
-                            .SetKeySerializer(Serializers.Utf8)
-                            .SetValueSerializer(Serializers.Utf8)
-                            .Build();
+        private readonly ProducerConfig _config;
 
-        var @eventMessage = new Message<string, string>
+        public EventProducer(IOptions<ProducerConfig> config)
         {
-            Key = Guid.NewGuid().ToString(),
-            Value = JsonSerializer.Serialize(@event, @event.GetType()),
-        };
-
-        var deliveryResult = await producer.ProduceAsync(topic, @eventMessage);
-
-        if(deliveryResult.Status == PersistenceStatus.NotPersisted)
-        {
-            throw new Exception($"Could not produce {@event.GetType().Name} message to topic - {topic} due to the following reason: {deliveryResult.Message}.");
+            _config = config.Value;
         }
 
+        public async Task ProduceAsync<T>(string topic, T @event) where T : BaseEvent
+        {
+            using var producer = new ProducerBuilder<string, string>(_config)
+                .SetKeySerializer(Serializers.Utf8)
+                .SetValueSerializer(Serializers.Utf8)
+                .Build();
+
+            var eventMessage = new Message<string, string>
+            {
+                Key = Guid.NewGuid().ToString(),
+                Value = JsonSerializer.Serialize(@event, @event.GetType())
+            };
+
+            var deliveryResult = await producer.ProduceAsync(topic, eventMessage);
+
+            if (deliveryResult.Status == PersistenceStatus.NotPersisted)
+            {
+                throw new Exception($"Could not produce {@event.GetType().Name} message to topic - {topic} due to the following reason: {deliveryResult.Message}.");
+            }
+        }
     }
 }

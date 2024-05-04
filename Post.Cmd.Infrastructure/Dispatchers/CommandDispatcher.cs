@@ -1,29 +1,32 @@
-﻿using CQRS.Core.Commands;
+using CQRS.Core.Commands;
 using CQRS.Core.Infrastructure;
 
-namespace Post.Cmd.Infrastructure.Dispatchers;
-public class CommandDispatcher : ICommandDispatcher
+namespace Post.Cmd.Infrastructure.Dispatchers
 {
-    private readonly Dictionary<Type, Func<BaseCommand, Task>> _handler = [];
-    public void RegisterHandler<T>(Func<T, Task> handler) where T : BaseCommand
+    public class CommandDispatcher : ICommandDispatcher
     {
-        if(_handler.ContainsKey(typeof(T)))
+        private readonly Dictionary<Type, Func<BaseCommand, Task>> _handlers = new();
+
+        public void RegisterHandler<T>(Func<T, Task> handler) where T : BaseCommand
         {
-            throw new IndexOutOfRangeException("You Cannot register the same command handler twice");
+            if (_handlers.ContainsKey(typeof(T)))
+            {
+                throw new IndexOutOfRangeException("You cannot register the same command handler twice!");
+            }
+
+            _handlers.Add(typeof(T), x => handler((T)x));
         }
 
-        _handler.Add(typeof(T), x => handler((T)x));
-    }
-
-    public async void SendAsync(BaseCommand command)
-    {   
-        if (_handler.TryGetValue(command.GetType(), out Func<BaseCommand, Task> handler))
+        public async Task SendAsync(BaseCommand command)
         {
-            await handler(command);
-        }
-        else
-        {
-            throw new ArgumentNullException(nameof(handler), "No command handler was register");
+            if (_handlers.TryGetValue(command.GetType(), out Func<BaseCommand, Task> handler))
+            {
+                await handler(command);
+            }
+            else
+            {
+                throw new ArgumentNullException(nameof(handler), "No command handler was registered!");
+            }
         }
     }
 }

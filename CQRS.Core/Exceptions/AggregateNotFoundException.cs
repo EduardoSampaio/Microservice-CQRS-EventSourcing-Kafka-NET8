@@ -1,5 +1,10 @@
-﻿namespace CQRS.Core.Exceptions;
-public class AggregateNotFoundException : Exception
+namespace CQRS.Core.Exceptions
 {
-    public AggregateNotFoundException(string message): base(message) { }
+    public class AggregateNotFoundException : Exception
+    {
+        public AggregateNotFoundException(string message) : base(message)
+        {
+
+        }
+    }
 }

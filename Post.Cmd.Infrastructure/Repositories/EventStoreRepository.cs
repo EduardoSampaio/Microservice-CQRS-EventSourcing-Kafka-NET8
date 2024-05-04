@@ -1,31 +1,36 @@
-﻿using CQRS.Core.Domain;
+using CQRS.Core.Domain;
 using CQRS.Core.Events;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 using Post.Cmd.Infrastructure.Config;
 
-namespace Post.Cmd.Infrastructure.Repositories;
-public class EventStoreRepository : IEventStoreRepository
+namespace Post.Cmd.Infrastructure.Repositories
 {
-    private readonly IMongoCollection<EventModel> _eventStoreCollection;
-
-    public EventStoreRepository(IOptions<MongoDbConfig> options)
+    public class EventStoreRepository : IEventStoreRepository
     {
-        var mongoClient = new MongoClient(options.Value.ConnectionString);
-        var mongoDatabase = mongoClient.GetDatabase(options.Value.Database);
+        private readonly IMongoCollection<EventModel> _eventStoreCollection;
 
-        _eventStoreCollection = mongoDatabase.GetCollection<EventModel>(options.Value.Collection);
-    }
+        public EventStoreRepository(IOptions<MongoDbConfig> config)
+        {
+            var mongoClient = new MongoClient(config.Value.ConnectionString);
+            var mongoDatabase = mongoClient.GetDatabase(config.Value.Database);
 
-    public async Task<IEnumerable<EventModel>> FindByAggregateId(Guid AggregateId)
-    {
-        return await _eventStoreCollection.Find(x => x.AggregateIdentifier == AggregateId)
-                                          .ToListAsync()
-                                          .ConfigureAwait(false);
-    }
+            _eventStoreCollection = mongoDatabase.GetCollection<EventModel>(config.Value.Collection);
+        }
 
-    public async Task SaveAsync(EventModel @event)
-    {
-        await _eventStoreCollection.InsertOneAsync(@event).ConfigureAwait(false);
+        public async Task<List<EventModel>> FindAllAsync()
+        {
+            return await _eventStoreCollection.Find(_ => true).ToListAsync().ConfigureAwait(false);
+        }
+
+        public async Task<List<EventModel>> FindByAggregateId(Guid aggregateId)
+        {
+            return await _eventStoreCollection.Find(x => x.AggregateIdentifier == aggregateId).ToListAsync().ConfigureAwait(false);
+        }
+
+        public async Task SaveAsync(EventModel @event)
+        {
+            await _eventStoreCollection.InsertOneAsync(@event).ConfigureAwait(false);
+        }
     }
 }
